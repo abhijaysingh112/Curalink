@@ -71,9 +71,8 @@ export function ProfileForm() {
   };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    // In a real app, you would save the profile data
-    console.log({ ...values, conditions });
-    // For now, we just navigate to the dashboard
+    const patientProfile = { ...values, conditions };
+    localStorage.setItem('patientProfile', JSON.stringify(patientProfile));
     router.push('/patient/dashboard');
   }
 
