@@ -103,24 +103,24 @@ export default function LoginPage() {
       const { exists, userType: actualUserType } = await checkIfUserExists(values.email);
 
       if (exists) {
-        // User profile exists, so we must enforce the role.
         if (actualUserType !== userType) {
           toast({
             variant: 'destructive',
             title: 'Incorrect Portal',
             description: `This is a ${actualUserType} account. Please log in through the ${actualUserType} portal.`,
           });
-          // Critical: Sign out the user immediately to prevent access.
           await auth?.signOut();
         } else {
-          // Role matches, proceed to dashboard.
           router.push(`/${userType}/dashboard`);
         }
       } else {
-        // User is authenticated but has no profile in Firestore.
-        // This happens on first login after signup. Force them to the profile page
-        // for the portal they are currently on to establish their role.
-        router.push(`/${userType}/profile`);
+        // User authenticated but no profile exists. Treat as invalid login.
+        toast({
+          variant: 'destructive',
+          title: 'Authentication Failed',
+          description: 'Invalid email or password. Please try again.',
+        });
+        await auth?.signOut();
       }
     } catch (error: any) {
       handleAuthError(error, toast);
@@ -140,6 +140,7 @@ export default function LoginPage() {
             title: 'Email Already Registered',
             description: `This email is already registered as a ${existingUserType}. Please log in.`,
         });
+        setIsLoading(false);
         return; 
       }
 
@@ -148,7 +149,6 @@ export default function LoginPage() {
         values.email,
         values.password
       );
-      // After signup, redirect to the profile page to create the user's role-specific profile.
       router.push(`/${userType}/profile`);
     } catch (error: any) {
       handleAuthError(error, toast);
