@@ -55,6 +55,7 @@ function handleAuthError(error: any, toast: any) {
     switch (error.code) {
       case 'auth/user-not-found':
       case 'auth/wrong-password':
+      case 'auth/invalid-credential':
         description = 'Invalid email or password. Please try again.';
         break;
       case 'auth/email-already-in-use':
@@ -98,8 +99,26 @@ export default function LoginPage() {
   const onLoginSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     try {
+      // 1. Authenticate the user with Firebase Auth
       await signInWithEmailAndPassword(auth as Auth, values.email, values.password);
-      router.push(`/${userType}/dashboard`);
+
+      // 2. Check the user's type from our Firestore database
+      const { exists, userType: actualUserType } = await checkIfUserExists(values.email);
+
+      // 3. Compare the actual user type with the portal type
+      if (exists && actualUserType !== userType) {
+        // If they don't match, show an error and stop.
+        toast({
+          variant: 'destructive',
+          title: 'Incorrect Portal',
+          description: `This is a ${actualUserType} account. Please log in through the ${actualUserType} portal.`,
+        });
+        // Log the user out again to prevent session confusion
+        await auth?.signOut();
+      } else {
+        // 4. If they match (or if the user doesn't exist in Firestore yet, which happens on first login), proceed.
+        router.push(`/${userType}/dashboard`);
+      }
     } catch (error: any) {
       handleAuthError(error, toast);
     } finally {
@@ -110,32 +129,24 @@ export default function LoginPage() {
   const onSignupSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
     try {
-      // Step 1: Check if the user exists in our Firestore database
       const { exists, userType: existingUserType } = await checkIfUserExists(values.email);
 
       if (exists) {
-        if (existingUserType && existingUserType !== userType) {
-          // User exists with a different role
-          toast({
+        toast({
             variant: 'destructive',
             title: 'Email Already Registered',
-            description: `This email is already registered as a ${existingUserType}. Please use a different email.`,
-          });
-          return; // Stop the sign-up process
-        }
+            description: `This email is already registered as a ${existingUserType}. Please log in.`,
+        });
+        return; 
       }
 
-      // Step 2: If the check passes, proceed with creating the user in Firebase Auth
       await createUserWithEmailAndPassword(
         auth as Auth,
         values.email,
         values.password
       );
-      // Redirect to dashboard after successful signup
-      router.push(`/${userType}/dashboard`);
+      router.push(`/${userType}/profile`);
     } catch (error: any) {
-      // This will catch errors from createUserWithEmailAndPassword, like auth/email-already-in-use
-      // if the user exists in Auth but not in our Firestore DB for some reason.
       handleAuthError(error, toast);
     } finally {
       setIsLoading(false);
