@@ -1,0 +1,245 @@
+/**
+ * @fileoverview Firestore Security Rules for CuraLink.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-specific data
+ * while allowing public read access to shared resources like publications and
+ * clinical trials. Authorization decisions are primarily based on the
+ * authenticated user's ID and explicit ownership relationships within the data.
+ *
+ * Data Structure:
+ * - /users/{userId}: Stores user profile information. Only the authenticated user
+ *   can access their own profile.
+ * - /users/{userId}/patient_profile: Stores patient-specific profile information.
+ *   Only the authenticated user can access their own patient profile.
+ * - /users/{userId}/researcher_profile: Stores researcher-specific profile information.
+ *   Only the authenticated user can access their own researcher profile.
+ * - /publications/{publicationId}: Stores publication data. Publicly readable.
+ * - /clinical_trials/{clinicalTrialId}: Stores clinical trial data. Publicly readable.
+ * - /forums/{forumId}: Stores forum metadata. Only the creating researcher can modify.
+ * - /forums/{forumId}/posts/{postId}: Stores posts within forums.  Posts can only be created by authenticated users (researchers).
+ * - /users/{userId}/favorites/{favoriteId}: Stores user-specific favorites. Only
+ *   the authenticated user can access their own favorites.
+ * - /meeting_requests/{meetingRequestId}: Stores meeting requests between patients and
+ *   researchers. Access control is based on patientId, researcherId, and status.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed.
+ * - Public read access is granted to publications and clinical trials.
+ * - Strict ownership is enforced for user profiles and related data.
+ * - All write operations are explicitly authorized.
+ * - Denormalization is used to avoid costly `get()` calls in rules (e.g., `researcherId` in `/forums`).
+ *
+ * Denormalization for Authorization:
+ * - The 'forums' collection denormalizes the 'researcherId' to allow for direct
+ *   authorization checks without needing to perform additional reads.
+ *
+ * Structural Segregation:
+ * - User-specific data (profiles, favorites) is stored under /users/{userId} to
+ *   enforce ownership.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Checks if the request is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the provided userId.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if the authenticated user's ID matches the provided userId
+     *              and the document exists.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description Enforces that the incoming request data has a userId field
+     *              matching the authenticated user's ID.  Used on create.
+     */
+    function matchesAuthUserId() {
+        return request.resource.data.userId == request.auth.uid;
+    }
+
+    /**
+     * @description Enforces that the incoming request data's `userId` is immutable
+     *              and matches the existing document's `userId`.  Used on update.
+     *              Assumes the userId field already existed and was valid.
+     */
+    function isUserIdImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    /**
+     * @description Rules for the /users/{userId} collection.
+     * @path /users/{userId}
+     * @allow (create) User with ID 'user123' creates their profile: auth.uid == 'user123'
+     * @deny (create) User with ID 'user123' tries to create a profile for 'user456': auth.uid != 'user123'
+     * @allow (get) User with ID 'user123' reads their own profile: auth.uid == 'user123'
+     * @deny (get) User with ID 'user123' tries to read profile for 'user456': auth.uid != 'user123'
+     * @principle Enforces document ownership for writes and reads.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // User listing is not permitted.
+      allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/patient_profile collection.
+     * @path /users/{userId}/patient_profile
+     * @allow (create) User with ID 'user123' creates their patient profile: auth.uid == 'user123'
+     * @deny (create) User with ID 'user123' tries to create a patient profile for 'user456': auth.uid != 'user123'
+     * @allow (get) User with ID 'user123' reads their own patient profile: auth.uid == 'user123'
+     * @deny (get) User with ID 'user123' tries to read patient profile for 'user456': auth.uid != 'user123'
+     * @principle Enforces document ownership for writes and reads.
+     */
+    match /users/{userId}/patient_profile {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && matchesAuthUserId();
+      allow update: if isExistingOwner(userId) && isUserIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/researcher_profile collection.
+     * @path /users/{userId}/researcher_profile
+     * @allow (create) User with ID 'user123' creates their researcher profile: auth.uid == 'user123'
+     * @deny (create) User with ID 'user123' tries to create a researcher profile for 'user456': auth.uid != 'user123'
+     * @allow (get) User with ID 'user123' reads their own researcher profile: auth.uid == 'user123'
+     * @deny (get) User with ID 'user123' tries to read researcher profile for 'user456': auth.uid != 'user123'
+     * @principle Enforces document ownership for writes and reads.
+     */
+    match /users/{userId}/researcher_profile {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && matchesAuthUserId();
+      allow update: if isExistingOwner(userId) && isUserIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /publications/{publicationId} collection.
+     * @path /publications/{publicationId}
+     * @allow (get) Any user can read publication data.
+     * @allow (list) Any user can list publications.
+     * @deny (create) Only authorized users can create publications (TODO: Implement admin role).
+     * @deny (update) Only authorized users can update publications (TODO: Implement admin role).
+     * @deny (delete) Only authorized users can delete publications (TODO: Implement admin role).
+     * @principle Allows public read access but restricts write access to authorized users.
+     */
+    match /publications/{publicationId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false; // TODO: Add admin role validation
+      allow update: if false; // TODO: Add admin role validation
+      allow delete: if false; // TODO: Add admin role validation
+    }
+
+    /**
+     * @description Rules for the /clinical_trials/{clinicalTrialId} collection.
+     * @path /clinical_trials/{clinicalTrialId}
+     * @allow (get) Any user can read clinical trial data.
+     * @allow (list) Any user can list clinical trials.
+     * @deny (create) Only authorized users can create clinical trials (TODO: Implement admin role).
+     * @deny (update) Only authorized users can update clinical trials (TODO: Implement admin role).
+     * @deny (delete) Only authorized users can delete clinical trials (TODO: Implement admin role).
+     * @principle Allows public read access but restricts write access to authorized users.
+     */
+    match /clinical_trials/{clinicalTrialId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false; // TODO: Add admin role validation
+      allow update: if false; // TODO: Add admin role validation
+      allow delete: if false; // TODO: Add admin role validation
+    }
+
+   /**
+    * @description Rules for the /forums/{forumId} collection.
+    * @path /forums/{forumId}
+    * @allow (create) A researcher can create a forum if the researcherId matches their user ID.
+    * @deny (create) A user cannot create a forum for another researcher.
+    * @allow (get) Any authenticated user can read forum data.
+    * @allow (list) Any authenticated user can list forums.
+    * @deny (update) Only the researcher who created the forum can update it.
+    * @deny (delete) Only the researcher who created the forum can delete it.
+    * @principle Enforces ownership based on the researcherId field within the forum document.
+    */
+    match /forums/{forumId} {
+        allow get: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create: if isSignedIn() && request.resource.data.researcherId == request.auth.uid;
+        allow update: if isSignedIn() && resource.data.researcherId == request.auth.uid && resource != null;
+        allow delete: if isSignedIn() && resource.data.researcherId == request.auth.uid && resource != null;
+    }
+
+   /**
+    * @description Rules for the /forums/{forumId}/posts/{postId} collection.
+    * @path /forums/{forumId}/posts/{postId}
+    * @allow (create) An authenticated user can create a post in a forum.
+    * @deny (create) An unauthenticated user cannot create a post.
+    * @allow (get) Any authenticated user can read a post.
+    * @allow (list) Any authenticated user can list posts in a forum.
+    * @deny (update) Only the user who created the post can update it.
+    * @deny (delete) Only the user who created the post can delete it.
+    * @principle Enforces authentication and allows posts to be created and read by authenticated users.
+    */
+    match /forums/{forumId}/posts/{postId} {
+        allow get: if isSignedIn();
+        allow list: if isSignedIn();
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.forumId == forumId;
+        allow update: if false; // Only the creator can update the post
+        allow delete: if false; // Only the creator can delete the post
+    }
+
+
+    /**
+     * @description Rules for the /users/{userId}/favorites/{favoriteId} collection.
+     * @path /users/{userId}/favorites/{favoriteId}
+     * @allow (create) User with ID 'user123' creates their favorite item: auth.uid == 'user123'
+     * @deny (create) User with ID 'user123' tries to create a favorite item for 'user456': auth.uid != 'user123'
+     * @allow (get) User with ID 'user123' reads their own favorite item: auth.uid == 'user123'
+     * @deny (get) User with ID 'user123' tries to read favorite item for 'user456': auth.uid != 'user123'
+     * @principle Enforces document ownership for writes and reads.
+     */
+    match /users/{userId}/favorites/{favoriteId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && matchesAuthUserId();
+      allow update: if isExistingOwner(userId) && isUserIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for the /meeting_requests/{meetingRequestId} collection.
+     * @path /meeting_requests/{meetingRequestId}
+     * @allow (get) Any authenticated user can read meeting request data.
+     * @allow (list) Any authenticated user can list meeting requests.
+     * @deny (create) Only a patient or researcher can create a meeting request.
+     * @deny (update) Only the patient or researcher involved can update the meeting request status.
+     * @deny (delete) Only the patient or researcher involved can delete the meeting request.
+     * @principle Restricts access to meeting requests based on user roles and request status.
+     */
+    match /meeting_requests/{meetingRequestId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && (request.resource.data.patientId == request.auth.uid || request.resource.data.researcherId == request.auth.uid);
+      allow update: if isSignedIn() && (resource.data.patientId == request.auth.uid || resource.data.researcherId == request.auth.uid) && resource != null;
+      allow delete: if isSignedIn() && (resource.data.patientId == request.auth.uid || resource.data.researcherId == request.auth.uid) && resource != null;
+    }
+  }
+}

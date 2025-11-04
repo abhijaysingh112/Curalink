@@ -1,0 +1,490 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the CuraLink platform.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "userType": {
+          "type": "string",
+          "description": "Type of user (e.g., patient, researcher).",
+          "format": "string"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "firstName": {
+          "type": "string",
+          "description": "First name of the user."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user."
+        }
+      },
+      "required": [
+        "id",
+        "userType",
+        "email",
+        "firstName",
+        "lastName"
+      ]
+    },
+    "PatientProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "PatientProfile",
+      "type": "object",
+      "description": "Represents the profile information for a patient.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the patient profile entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 PatientProfile)"
+        },
+        "medicalConditions": {
+          "type": "string",
+          "description": "Medical conditions of the patient, input as natural language text."
+        },
+        "locationCity": {
+          "type": "string",
+          "description": "The city of the patient."
+        },
+        "locationCountry": {
+          "type": "string",
+          "description": "The country of the patient."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "medicalConditions",
+        "locationCity",
+        "locationCountry"
+      ]
+    },
+    "ResearcherProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ResearcherProfile",
+      "type": "object",
+      "description": "Represents the profile information for a researcher.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the researcher profile entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:1 ResearcherProfile)"
+        },
+        "specialties": {
+          "type": "array",
+          "description": "Specialties of the researcher.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "researchInterests": {
+          "type": "array",
+          "description": "Research interests of the researcher.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "orcidId": {
+          "type": "string",
+          "description": "ORCID identifier of the researcher."
+        },
+        "researchGateId": {
+          "type": "string",
+          "description": "ResearchGate identifier of the researcher."
+        },
+        "availableForMeetings": {
+          "type": "boolean",
+          "description": "Indicates whether the researcher is available for meetings."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "specialties",
+        "researchInterests",
+        "availableForMeetings"
+      ]
+    },
+    "Publication": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Publication",
+      "type": "object",
+      "description": "Represents a publication.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the publication entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the publication."
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of the publication.",
+          "format": "uri"
+        },
+        "summary": {
+          "type": "string",
+          "description": "AI-generated summary of the publication."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "url",
+        "summary"
+      ]
+    },
+    "ClinicalTrial": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ClinicalTrial",
+      "type": "object",
+      "description": "Represents a clinical trial.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the clinical trial entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the clinical trial."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the clinical trial."
+        },
+        "eligibility": {
+          "type": "string",
+          "description": "Eligibility criteria for the clinical trial."
+        },
+        "phase": {
+          "type": "string",
+          "description": "Phase of the clinical trial."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the clinical trial (e.g., recruiting, completed)."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "eligibility",
+        "phase",
+        "status"
+      ]
+    },
+    "Forum": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Forum",
+      "type": "object",
+      "description": "Represents a forum for discussions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the forum entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the forum."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the forum."
+        },
+        "researcherId": {
+          "type": "string",
+          "description": "Reference to Researcher. (Relationship: Researcher 1:N Forum)"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "researcherId"
+      ]
+    },
+    "Post": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Post",
+      "type": "object",
+      "description": "Represents a post within a forum.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the post entity."
+        },
+        "forumId": {
+          "type": "string",
+          "description": "Reference to Forum. (Relationship: Forum 1:N Post)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Post)"
+        },
+        "content": {
+          "type": "string",
+          "description": "Content of the post."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of when the post was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "forumId",
+        "userId",
+        "content",
+        "timestamp"
+      ]
+    },
+    "Favorite": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Favorite",
+      "type": "object",
+      "description": "Represents a user's saved favorite item.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the favorite entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Favorite)"
+        },
+        "itemType": {
+          "type": "string",
+          "description": "Type of the favorited item (e.g., publication, clinical trial, expert)."
+        },
+        "itemId": {
+          "type": "string",
+          "description": "Identifier of the favorited item (e.g., publication ID, clinical trial ID, user ID)."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "itemType",
+        "itemId"
+      ]
+    },
+    "MeetingRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "MeetingRequest",
+      "type": "object",
+      "description": "Represents a request for a meeting between a patient and a researcher.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the meeting request entity."
+        },
+        "patientId": {
+          "type": "string",
+          "description": "Reference to Patient. (Relationship: Patient 1:N MeetingRequest)"
+        },
+        "researcherId": {
+          "type": "string",
+          "description": "Reference to Researcher. (Relationship: Researcher 1:N MeetingRequest)"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the meeting request (e.g., pending, accepted, rejected)."
+        },
+        "requestTime": {
+          "type": "string",
+          "description": "Time at which the meeting was requested",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "patientId",
+        "researcherId",
+        "status"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user information. Path-based ownership ensures only the authenticated user can access their own data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/patient_profile",
+        "definition": {
+          "entityName": "PatientProfile",
+          "schema": {
+            "$ref": "#/backend/entities/PatientProfile"
+          },
+          "description": "Stores patient profile information, linked to a user ID. Path-based ownership ensures only the authenticated user can access their own profile data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/researcher_profile",
+        "definition": {
+          "entityName": "ResearcherProfile",
+          "schema": {
+            "$ref": "#/backend/entities/ResearcherProfile"
+          },
+          "description": "Stores researcher profile information, linked to a user ID. Path-based ownership ensures only the authenticated user can access their own profile data.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/publications/{publicationId}",
+        "definition": {
+          "entityName": "Publication",
+          "schema": {
+            "$ref": "#/backend/entities/Publication"
+          },
+          "description": "Stores publication information. Open access with potential restrictions on modifications based on admin roles.",
+          "params": [
+            {
+              "name": "publicationId",
+              "description": "The unique identifier for the publication."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/clinical_trials/{clinicalTrialId}",
+        "definition": {
+          "entityName": "ClinicalTrial",
+          "schema": {
+            "$ref": "#/backend/entities/ClinicalTrial"
+          },
+          "description": "Stores clinical trial information. Open access with potential restrictions on modifications based on admin roles.",
+          "params": [
+            {
+              "name": "clinicalTrialId",
+              "description": "The unique identifier for the clinical trial."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/forums/{forumId}",
+        "definition": {
+          "entityName": "Forum",
+          "schema": {
+            "$ref": "#/backend/entities/Forum"
+          },
+          "description": "Stores forum information.  Includes denormalized 'researcherId' for authorization independence, ensuring that only the forum creator can manage the forum.",
+          "params": [
+            {
+              "name": "forumId",
+              "description": "The unique identifier for the forum."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/forums/{forumId}/posts/{postId}",
+        "definition": {
+          "entityName": "Post",
+          "schema": {
+            "$ref": "#/backend/entities/Post"
+          },
+          "description": "Stores posts within a forum.  Authorization is based on the 'forumId' and the user's authentication status. Researchers can create communities and answer questions in relevant forum topics. Patients may not reply to each other, and may not create new communities.",
+          "params": [
+            {
+              "name": "forumId",
+              "description": "The unique identifier for the forum."
+            },
+            {
+              "name": "postId",
+              "description": "The unique identifier for the post."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/favorites/{favoriteId}",
+        "definition": {
+          "entityName": "Favorite",
+          "schema": {
+            "$ref": "#/backend/entities/Favorite"
+          },
+          "description": "Stores user's favorite items. Path-based ownership ensures only the authenticated user can access their own favorites.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user."
+            },
+            {
+              "name": "favoriteId",
+              "description": "The unique identifier for the favorite item."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/meeting_requests/{meetingRequestId}",
+        "definition": {
+          "entityName": "MeetingRequest",
+          "schema": {
+            "$ref": "#/backend/entities/MeetingRequest"
+          },
+          "description": "Stores meeting requests between patients and researchers. Access control will be based on the 'patientId', 'researcherId', and the 'status' of the request.",
+          "params": [
+            {
+              "name": "meetingRequestId",
+              "description": "The unique identifier for the meeting request."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support CuraLink's core features while adhering to the principles of Authorization Independence, Structural Segregation, Access Modeling, and Data Clarity.  Authorization Independence is achieved through denormalization of authorization data.  For example, instead of relying on `get()` calls to determine the researcher associated with a forum, the `researcherId` is directly stored within the `/forums/{forumId}` document, eliminating the need for hierarchical authorization checks. The Membership Map pattern isn't directly applicable given the current feature set, but could be utilized for more complex authorization scenarios in the future. Structural Segregation is achieved by using dedicated collections for each entity type (e.g., `/users`, `/patient_profiles`, `/researcher_profiles`, `/publications`, `/clinical_trials`, `/forums`, `/posts`, `/favorites`, `/meeting_requests`). This ensures that all documents within a collection share the same security requirements, simplifying security rules and improving performance. Access Modeling is implemented using path-based ownership for user-specific data. For example, patient profiles and researcher profiles are stored under `/users/{userId}`, ensuring that only the authenticated user can access their own profile data. Forums are created by researchers, and posts are associated with both forums and users, enabling fine-grained access control based on user roles and forum ownership.  QAPs are supported using structural segregation. Listing publications or clinical trials does not require complex filtering based on user roles, as these are global entities with their own security rules. Forum listing can be restricted to signed-in users, and post listing can be filtered by forum ID, preventing unauthorized access to content. The data structure also utilizes explicit state modeling with a `status` field in the `MeetingRequest` entity, avoiding inferred states. Semantic naming conventions are consistently applied across all paths and fields, enhancing data clarity and predictability."
+  }
+}
