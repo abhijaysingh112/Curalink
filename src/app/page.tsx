@@ -34,12 +34,7 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/login?type=patient" passHref>
                   <Button size="lg" className="w-full sm:w-auto text-base font-semibold">
-                    I am a Patient <ArrowRight className="ml-2" />
-                  </Button>
-                </Link>
-                 <Link href="/login?type=patient" passHref>
-                  <Button size="lg" variant="secondary" className="w-full sm:w-auto text-base font-semibold">
-                    I am a Caregiver
+                    I am a Patient or Caregiver <ArrowRight className="ml-2" />
                   </Button>
                 </Link>
                 <Link href="/login?type=researcher" passHref>
