@@ -1,6 +1,5 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -15,10 +14,13 @@ import { UserNav } from '@/components/user-nav';
 import { CuraLinkLogo } from '@/components/curalink-logo';
 import Link from 'next/link';
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const userType = pathname.includes('/patient') ? 'patient' : 'researcher';
-
+export function DashboardLayout({ 
+  children,
+  userType,
+}: { 
+  children: React.ReactNode,
+  userType: 'patient' | 'researcher',
+}) {
   return (
     <SidebarProvider>
       <Sidebar>
