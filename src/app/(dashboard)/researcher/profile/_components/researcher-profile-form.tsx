@@ -22,16 +22,23 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { X } from 'lucide-react';
+import { useFirebase, useUser } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Please enter your name.'),
   bio: z.string().min(10, 'Please provide a professional bio.'),
   location: z.string().min(2, 'Please enter your location (e.g., university, city).'),
+  orcidId: z.string().optional(),
+  researchGateId: z.string().optional(),
   isAvailableForMeetings: z.boolean().default(false),
 });
 
 export function ResearcherProfileForm() {
   const router = useRouter();
+  const { firestore } = useFirebase();
+  const { user } = useUser();
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [newSpecialty, setNewSpecialty] = useState('');
   const [researchInterests, setResearchInterests] = useState<string[]>([]);
@@ -43,6 +50,8 @@ export function ResearcherProfileForm() {
       name: '',
       bio: '',
       location: '',
+      orcidId: '',
+      researchGateId: '',
       isAvailableForMeetings: false,
     },
   });
@@ -66,9 +75,39 @@ export function ResearcherProfileForm() {
     setter(prev => prev.filter(c => c !== itemToRemove));
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const researcherProfile = { ...values, specialties, researchInterests };
-    localStorage.setItem('researcherProfile', JSON.stringify(researcherProfile));
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user || !firestore) return;
+    
+    const { name, isAvailableForMeetings, orcidId, researchGateId } = values;
+
+    const researcherProfileData = {
+        id: user.uid,
+        userId: user.uid,
+        specialties,
+        researchInterests,
+        availableForMeetings: isAvailableForMeetings,
+        orcidId: orcidId || '',
+        researchGateId: researchGateId || '',
+    };
+
+    const userProfileData = {
+        id: user.uid,
+        userType: 'researcher',
+        email: user.email,
+        firstName: name.split(' ')[0] || '',
+        lastName: name.split(' ').slice(1).join(' ') || '',
+    };
+    
+    const researcherProfileRef = doc(firestore, 'users', user.uid, 'researcher_profile', user.uid);
+    const userProfileRef = doc(firestore, 'users', user.uid);
+    
+    setDocumentNonBlocking(researcherProfileRef, researcherProfileData, { merge: true });
+    setDocumentNonBlocking(userProfileRef, userProfileData, { merge: true });
+
+    // For instant UI update, we'll still use local storage for the dashboard redirect
+    localStorage.setItem('researcherProfile', JSON.stringify({ name: values.name }));
+    localStorage.setItem('userProfile', JSON.stringify(userProfileData));
+
     router.push('/researcher/dashboard');
   }
 
@@ -180,6 +219,34 @@ export function ResearcherProfileForm() {
               </Card>
           )}
         </div>
+        
+        <FormField
+          control={form.control}
+          name="orcidId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-lg">ORCID ID (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="0000-0000-0000-0000" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="researchGateId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-lg">ResearchGate Profile (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Alan-Grant-123" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
 
         <FormField
@@ -220,7 +287,7 @@ export function ResearcherProfileForm() {
           )}
         />
         
-        <Button type="submit" size="lg">
+        <Button type="submit" size="lg" disabled={!user}>
           Complete Profile & View Dashboard
         </Button>
       </form>

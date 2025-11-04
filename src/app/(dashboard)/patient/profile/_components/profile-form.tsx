@@ -22,6 +22,10 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { X, Sparkles, Loader2 } from 'lucide-react';
+import { useFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { useUser } from '@/firebase';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Please enter your name.'),
@@ -31,6 +35,8 @@ const formSchema = z.object({
 
 export function ProfileForm() {
   const router = useRouter();
+  const { firestore } = useFirebase();
+  const { user } = useUser();
   const [conditions, setConditions] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [newCondition, setNewCondition] = useState('');
@@ -70,9 +76,38 @@ export function ProfileForm() {
     setConditions(prev => prev.filter(c => c !== conditionToRemove));
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const patientProfile = { ...values, conditions };
-    localStorage.setItem('patientProfile', JSON.stringify(patientProfile));
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!user || !firestore) return;
+
+    const { name, location } = values;
+    const [locationCity, locationCountry] = location.split(',').map(s => s.trim());
+
+    const patientProfileData = {
+      id: user.uid,
+      userId: user.uid,
+      medicalConditions: conditions.join(', '),
+      locationCity: locationCity || '',
+      locationCountry: locationCountry || '',
+    };
+    
+    const userProfileData = {
+        id: user.uid,
+        userType: 'patient',
+        email: user.email,
+        firstName: name.split(' ')[0] || '',
+        lastName: name.split(' ').slice(1).join(' ') || '',
+    };
+
+    const patientProfileRef = doc(firestore, 'users', user.uid, 'patient_profile', user.uid);
+    const userProfileRef = doc(firestore, 'users', user.uid);
+    
+    setDocumentNonBlocking(patientProfileRef, patientProfileData, { merge: true });
+    setDocumentNonBlocking(userProfileRef, userProfileData, { merge: true });
+
+    // For instant UI update, we'll still use local storage for the dashboard redirect
+    localStorage.setItem('patientProfile', JSON.stringify({ name: values.name }));
+    localStorage.setItem('userProfile', JSON.stringify(userProfileData));
+
     router.push('/patient/dashboard');
   }
 
@@ -175,7 +210,7 @@ export function ProfileForm() {
           )}
         />
         
-        <Button type="submit" size="lg">
+        <Button type="submit" size="lg" disabled={!user}>
           Complete Profile & View Dashboard
         </Button>
       </form>

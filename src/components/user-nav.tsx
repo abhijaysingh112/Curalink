@@ -13,32 +13,50 @@ import {
 import { Button } from './ui/button';
 import { LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
+import { useUser, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 interface UserNavProps {
   userType: 'patient' | 'researcher';
 }
 
 export function UserNav({ userType }: UserNavProps) {
+  const { user, isUserLoading } = useUser();
+  const { firestore } = useFirebase();
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const profileLink = `/${userType}/profile`;
   const avatarSeed = userType === 'patient' ? 'patient-1' : 'expert-2';
-  const defaultName = userType === 'patient' ? 'Jane Doe' : 'Dr. Alan Grant';
-  const defaultEmail = userType === 'patient' ? 'jane.doe@email.com' : 'alan.grant@email.com';
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userProfile } = useDoc<{firstName: string, lastName: string, email: string}>(userDocRef);
 
   useEffect(() => {
-    const profileKey = userType === 'patient' ? 'patientProfile' : 'researcherProfile';
-    const storedProfile = localStorage.getItem(profileKey);
-    if (storedProfile) {
-      const profile = JSON.parse(storedProfile);
-      setUserName(profile.name || defaultName);
-      // Assuming email isn't in the profile, so we'll keep the default for now
-      setUserEmail(profile.email || defaultEmail); 
+    if (isUserLoading) {
+      setUserName('Loading...');
+      setUserEmail('');
+      return;
+    }
+
+    if (userProfile) {
+      setUserName(`${userProfile.firstName} ${userProfile.lastName}`);
+      setUserEmail(userProfile.email);
+    } else if (user) {
+      setUserName(user.displayName || 'Anonymous User');
+      setUserEmail(user.email || '');
     } else {
+        const defaultName = userType === 'patient' ? 'Jane Doe' : 'Dr. Alan Grant';
+        const defaultEmail = userType === 'patient' ? 'jane.doe@email.com' : 'alan.grant@email.com';
         setUserName(defaultName);
         setUserEmail(defaultEmail);
     }
-  }, [userType, defaultName, defaultEmail]);
+  }, [user, userProfile, isUserLoading, userType]);
+
 
   return (
     <DropdownMenu>
@@ -52,7 +70,7 @@ export function UserNav({ userType }: UserNavProps) {
               src={`https://picsum.photos/seed/${avatarSeed}/100/100`}
               alt={userName}
             />
-            <AvatarFallback>{userName.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{isUserLoading ? '' : userName.charAt(0)}</AvatarFallback>
           </Avatar>
           <div className="hidden text-left group-data-[state=expanded]:block">
             <p className="truncate text-sm font-medium">{userName}</p>

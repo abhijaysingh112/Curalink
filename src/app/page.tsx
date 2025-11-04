@@ -12,6 +12,11 @@ export default function Home() {
           <CuraLinkLogo />
           <span className="font-bold text-xl font-headline text-primary">CuraLink</span>
         </Link>
+        <nav>
+            <Link href="/login" passHref>
+                <Button variant="outline">Sign In</Button>
+            </Link>
+        </nav>
       </header>
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="container mx-auto grid lg:grid-cols-2 items-center gap-12">
@@ -23,12 +28,12 @@ export default function Home() {
               CuraLink bridges the gap between patients and researchers, unlocking access to clinical trials, expert knowledge, and groundbreaking publications.
             </p>
             <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link href="/patient/profile" passHref>
+              <Link href="/login?type=patient" passHref>
                 <Button size="lg" className="w-full sm:w-auto text-base font-semibold">
                   I am a Patient / Caregiver <ArrowRight className="ml-2" />
                 </Button>
               </Link>
-              <Link href="/researcher/profile" passHref>
+              <Link href="/login?type=researcher" passHref>
                 <Button size="lg" variant="outline" className="w-full sm:w-auto text-base font-semibold">
                   I am a Researcher
                 </Button>
