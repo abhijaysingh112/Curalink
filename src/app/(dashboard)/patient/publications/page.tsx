@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/page-header';
+import { PublicationsList } from './_components/publications-list';
 
 export default function PublicationsPage() {
   return (
@@ -7,9 +8,7 @@ export default function PublicationsPage() {
         title="Publications"
         description="Explore research papers and articles relevant to you."
       />
-      <div className="text-center py-12 text-muted-foreground">
-        <p>Publication search will be implemented here.</p>
-      </div>
+      <PublicationsList />
     </div>
   );
 }

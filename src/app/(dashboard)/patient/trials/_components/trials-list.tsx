@@ -1,18 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { clinicalTrials } from '@/lib/data';
+import { getClinicalTrials } from '@/app/actions';
 import type { ClinicalTrial } from '@/lib/types';
 import { TrialCard } from '@/components/cards/trial-card';
 import { Search } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export function TrialsList() {
+  const [allTrials, setAllTrials] = useState<ClinicalTrial[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const filteredTrials = clinicalTrials.filter((trial) => {
+  useEffect(() => {
+    const fetchTrials = async () => {
+      setIsLoading(true);
+      const trials = await getClinicalTrials();
+      setAllTrials(trials);
+      setIsLoading(false);
+    };
+    fetchTrials();
+  }, []);
+
+  const filteredTrials = allTrials.filter((trial) => {
     const matchesSearch = trial.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       trial.keywords.some(k => k.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === 'all' || trial.status === statusFilter;
@@ -44,15 +57,24 @@ export function TrialsList() {
         </Select>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {filteredTrials.length > 0 ? (
-          filteredTrials.map((trial) => <TrialCard key={trial.id} trial={trial} />)
-        ) : (
-          <div className="text-center text-muted-foreground col-span-full py-12">
-            <p>No trials found matching your criteria.</p>
-          </div>
-        )}
-      </div>
+      {isLoading ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          <Skeleton className="h-56 w-full" />
+          <Skeleton className="h-56 w-full" />
+          <Skeleton className="h-56 w-full" />
+          <Skeleton className="h-56 w-full" />
+        </div>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2">
+          {filteredTrials.length > 0 ? (
+            filteredTrials.map((trial) => <TrialCard key={trial.id} trial={trial} />)
+          ) : (
+            <div className="text-center text-muted-foreground col-span-full py-12">
+              <p>No trials found matching your criteria.</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
