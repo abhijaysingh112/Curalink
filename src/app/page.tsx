@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, TestTube2, Users, BookOpen, UserPlus, Briefcase, FileText, Search, Handshake, Link2 } from 'lucide-react';
+import { ArrowRight, TestTube2, Users, BookOpen, UserPlus, Briefcase, FileText, Search, Handshake, Link2, HeartHandshake, Stethoscope } from 'lucide-react';
 import { CuraLinkLogo } from '@/components/curalink-logo';
 import { LandingIllustration } from '@/components/landing-illustration';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -34,7 +34,12 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/login?type=patient" passHref>
                   <Button size="lg" className="w-full sm:w-auto text-base font-semibold">
-                    I am a Patient / Caregiver <ArrowRight className="ml-2" />
+                    I am a Patient <ArrowRight className="ml-2" />
+                  </Button>
+                </Link>
+                 <Link href="/login?type=patient" passHref>
+                  <Button size="lg" variant="secondary" className="w-full sm:w-auto text-base font-semibold">
+                    I am a Caregiver
                   </Button>
                 </Link>
                 <Link href="/login?type=researcher" passHref>
@@ -63,7 +68,7 @@ export default function Home() {
                     {/* For Patients */}
                     <Card className="bg-card">
                         <CardHeader>
-                            <CardTitle className="font-headline text-2xl">For Patients & Caregivers</CardTitle>
+                            <CardTitle className="font-headline text-2xl flex items-center gap-2"><HeartHandshake className="h-8 w-8 text-primary" /> For Patients & Caregivers</CardTitle>
                             <CardDescription>Empower your health journey.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -94,7 +99,7 @@ export default function Home() {
                     {/* For Researchers */}
                      <Card className="bg-card">
                         <CardHeader>
-                            <CardTitle className="font-headline text-2xl">For Researchers</CardTitle>
+                            <CardTitle className="font-headline text-2xl flex items-center gap-2"><Stethoscope className="h-8 w-8 text-primary" /> For Researchers</CardTitle>
                             <CardDescription>Accelerate your research impact.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
