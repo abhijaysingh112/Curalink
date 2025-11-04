@@ -24,6 +24,7 @@ import { Badge } from '@/components/ui/badge';
 import { X, Sparkles, Loader2 } from 'lucide-react';
 
 const formSchema = z.object({
+  name: z.string().min(2, 'Please enter your name.'),
   description: z.string().min(10, 'Please provide a more detailed description.'),
   location: z.string().min(2, 'Please enter a valid location.'),
 });
@@ -37,6 +38,7 @@ export function ProfileForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
       description: '',
       location: '',
     },
@@ -78,6 +80,19 @@ export function ProfileForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-lg">Your Name</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g., Jane Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <FormField
           control={form.control}
           name="description"

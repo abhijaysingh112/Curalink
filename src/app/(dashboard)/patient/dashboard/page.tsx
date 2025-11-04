@@ -1,6 +1,6 @@
 import { PageHeader } from '@/components/page-header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { clinicalTrials, publications, researchers } from '@/lib/data';
+import { clinicalTrials, publications, researchers, patients } from '@/lib/data';
 import { TrialCard } from '@/components/cards/trial-card';
 import { PublicationCard } from '@/components/cards/publication-card';
 import { ExpertCard } from '@/components/cards/expert-card';
@@ -9,11 +9,12 @@ export default function PatientDashboardPage() {
   const recommendedTrials = clinicalTrials.slice(0, 2);
   const recommendedPublications = publications.slice(0, 2);
   const recommendedExperts = researchers.slice(0, 2);
+  const patientName = patients[0]?.name.split(' ')[0] || 'there';
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Your Dashboard"
+        title={`Welcome back, ${patientName}!`}
         description="Here are personalized recommendations based on your profile."
       />
 
