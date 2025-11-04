@@ -1,3 +1,34 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "expert-1",
+      "description": "Photo of Dr. Emily Carter",
+      "imageUrl": "https://images.unsplash.com/photo-1716948178278-38872fd9f9a5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxMHx8d29tYW4lMjBkb2N0b3IlMjBnbGFzc2VzfGVufDB8fHx8MTc2MjI1Njg0MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman doctor glasses"
+    },
+    {
+      "id": "expert-2",
+      "description": "Photo of Dr. Ben Adams",
+      "imageUrl": "https://images.unsplash.com/photo-1612943705904-e2e101abcd19?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtYW4lMjBkb2N0b3IlMjBwcm9mZXNzaW9uYWx8ZW58MHx8fHwxNzYyMjU2ODQwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man doctor professional"
+    },
+    {
+      "id": "expert-3",
+      "description": "Photo of Dr. Chloe Davis",
+      "imageUrl": "https://images.unsplash.com/photo-1573497019236-17f8177b81e8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHByb2Zlc3Npb25hbHxlbnwwfHx8fDE3NjIxODIzNDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "woman professional"
+    },
+    {
+      "id": "expert-4",
+      "description": "Photo of Dr. David Wilson",
+      "imageUrl": "https://images.unsplash.com/photo-1659353887977-c310d90c751a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxtYW4lMjBkb2N0b3IlMjBmcmllbmRseXxlbnwwfHx8fDE3NjIyNTY4NDF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man doctor friendly"
+    },
+    {
+      "id": "patient-1",
+      "description": "Avatar for a patient John Smith",
+      "imageUrl": "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxtYW4lMjBwb3J0cmFpdHxlbnwwfHx8fDE3NjIyMjQ5MzB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "man portrait"
+    }
+  ]
 }
