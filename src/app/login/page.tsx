@@ -114,8 +114,8 @@ export default function LoginPage() {
         values.email,
         values.password
       );
-      // Redirect to profile creation after successful signup
-      router.push(`/${userType}/profile`);
+      // Redirect to dashboard after successful signup
+      router.push(`/${userType}/dashboard`);
     } catch (error: any) {
       handleAuthError(error, toast);
     } finally {
