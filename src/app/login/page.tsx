@@ -99,25 +99,27 @@ export default function LoginPage() {
   const onLoginSubmit = async (values: LoginFormValues) => {
     setIsLoading(true);
     try {
-      // 1. Authenticate the user with Firebase Auth
       await signInWithEmailAndPassword(auth as Auth, values.email, values.password);
-
-      // 2. Check the user's type from our Firestore database
       const { exists, userType: actualUserType } = await checkIfUserExists(values.email);
 
-      // 3. Compare the actual user type with the portal type
-      if (exists && actualUserType !== userType) {
-        // If they don't match, show an error and stop.
-        toast({
-          variant: 'destructive',
-          title: 'Incorrect Portal',
-          description: `This is a ${actualUserType} account. Please log in through the ${actualUserType} portal.`,
-        });
-        // Log the user out again to prevent session confusion
-        await auth?.signOut();
+      if (exists) {
+        // User profile exists, so we must enforce the role.
+        if (actualUserType !== userType) {
+          toast({
+            variant: 'destructive',
+            title: 'Incorrect Portal',
+            description: `This is a ${actualUserType} account. Please log in through the ${actualUserType} portal.`,
+          });
+          await auth?.signOut();
+        } else {
+          // Role matches, proceed to dashboard.
+          router.push(`/${userType}/dashboard`);
+        }
       } else {
-        // 4. If they match (or if the user doesn't exist in Firestore yet, which happens on first login), proceed.
-        router.push(`/${userType}/dashboard`);
+        // User is authenticated but has no profile in Firestore.
+        // This happens on first login after signup. Force them to the profile page
+        // for the portal they are currently on to establish their role.
+        router.push(`/${userType}/profile`);
       }
     } catch (error: any) {
       handleAuthError(error, toast);
