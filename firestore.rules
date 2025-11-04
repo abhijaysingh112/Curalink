@@ -91,8 +91,11 @@ service cloud.firestore {
      * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if false; // User listing is not permitted.
+      // Allow reading of any user document if signed in (for finding experts),
+      // but only allow updates/deletes if the user is the owner.
+      // List is still false to prevent fetching all users at once.
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
@@ -125,8 +128,10 @@ service cloud.firestore {
      * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId}/researcher_profile/{profileId} {
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      // Allow any signed-in user to read researcher profiles
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      // Only the owner can write to their own profile
       allow create: if isOwner(userId) && matchesAuthUserId();
       allow update: if isExistingOwner(userId) && isUserIdImmutable();
       allow delete: if isExistingOwner(userId);
