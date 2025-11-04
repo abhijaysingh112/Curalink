@@ -49,6 +49,8 @@ export default function ForumPage() {
     const researcherReplies = posts?.filter(p => p.userType === 'researcher') || [];
 
     const isMyForum = user && forum && user.uid === forum.patientId;
+    // A researcher can reply, but a patient can't reply to their own question thread.
+    const canReply = user && forum && user.uid !== forum.patientId;
 
     if (isForumLoading || arePostsLoading) {
         return (
@@ -94,6 +96,7 @@ export default function ForumPage() {
                     <AlertTitle>Discussion not started</AlertTitle>
                     <AlertDescription>
                         This forum has been created, but the initial question hasn't been posted yet.
+                        {isMyForum && " Your question should appear here shortly."}
                     </AlertDescription>
                 </Alert>
                 </>

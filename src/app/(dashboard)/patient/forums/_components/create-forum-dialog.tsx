@@ -52,13 +52,12 @@ export function CreateForumDialog() {
       return;
     }
     
-    // This is now an async function to get the doc ref for the post
     try {
       const forumsColRef = collection(firestore, 'forums');
       const newForumData = {
           name: values.name,
-          description: values.description,
-          patientId: user.uid, // Patient creates the forum
+          description: values.description, // Keep description for list view
+          patientId: user.uid,
           createdAt: serverTimestamp(),
       };
       
@@ -104,7 +103,7 @@ export function CreateForumDialog() {
         <DialogHeader>
           <DialogTitle>Ask a New Question</DialogTitle>
           <DialogDescription>
-            Create a new discussion topic for researchers to answer.
+            Create a new discussion topic for researchers to answer. Your detailed question will be the first post.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
