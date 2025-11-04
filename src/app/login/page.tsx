@@ -114,13 +114,9 @@ export default function LoginPage() {
           router.push(`/${userType}/dashboard`);
         }
       } else {
-        // User authenticated but no profile exists. Treat as invalid login.
-        toast({
-          variant: 'destructive',
-          title: 'Authentication Failed',
-          description: 'Invalid email or password. Please try again.',
-        });
-        await auth?.signOut();
+        // User authenticated but no profile exists. This is a new user.
+        // Redirect them to their profile creation page.
+        router.push(`/${userType}/profile`);
       }
     } catch (error: any) {
       handleAuthError(error, toast);
