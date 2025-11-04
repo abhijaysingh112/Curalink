@@ -1,4 +1,5 @@
 import { PageHeader } from '@/components/page-header';
+import { ResearcherProfileForm } from './_components/researcher-profile-form';
 
 export default function ResearcherProfilePage() {
   return (
@@ -7,9 +8,7 @@ export default function ResearcherProfilePage() {
         title="Create Your Researcher Profile"
         description="Showcase your expertise to connect with patients and collaborators."
       />
-      <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-lg">
-        <p>Researcher profile form will be implemented here.</p>
-      </div>
+      <ResearcherProfileForm />
     </div>
   );
 }
