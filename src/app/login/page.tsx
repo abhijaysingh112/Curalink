@@ -110,6 +110,7 @@ export default function LoginPage() {
             title: 'Incorrect Portal',
             description: `This is a ${actualUserType} account. Please log in through the ${actualUserType} portal.`,
           });
+          // Critical: Sign out the user immediately to prevent access.
           await auth?.signOut();
         } else {
           // Role matches, proceed to dashboard.
@@ -147,6 +148,7 @@ export default function LoginPage() {
         values.email,
         values.password
       );
+      // After signup, redirect to the profile page to create the user's role-specific profile.
       router.push(`/${userType}/profile`);
     } catch (error: any) {
       handleAuthError(error, toast);
