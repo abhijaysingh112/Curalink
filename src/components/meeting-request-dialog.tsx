@@ -60,6 +60,9 @@ export function MeetingRequestDialog({
   const { toast } = useToast();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      meetingTime: '',
+    }
   });
   const { isSubmitting } = form.formState;
 
