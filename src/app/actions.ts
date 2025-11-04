@@ -6,7 +6,35 @@ import { summarizeClinicalTrial } from '@/ai/flows/clinical-trial-ai-summaries';
 import { generatePublicationSummary } from '@/ai/flows/researcher-publication-summaries';
 import { publications as mockPublications } from '@/lib/data';
 import type { ClinicalTrial, Publication } from '@/lib/types';
+import { initializeFirebase } from '@/firebase/server-init';
+import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
+
+export async function checkIfUserExists(email: string): Promise<{ exists: boolean, userType: string | null }> {
+    if (!email) {
+      return { exists: false, userType: null };
+    }
+    
+    try {
+      const { firestore } = initializeFirebase();
+      const usersRef = collection(firestore, 'users');
+      const q = query(usersRef, where('email', '==', email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        return { exists: true, userType: userDoc.data().userType || null };
+      }
+      
+      return { exists: false, userType: null };
+  
+    } catch (error) {
+      console.error("Error checking if user exists:", error);
+      // In case of a server-side error, we'll conservatively say the user doesn't exist
+      // to allow Firebase Auth to be the final gatekeeper.
+      return { exists: false, userType: null };
+    }
+  }
 
 export async function getMedicalConditions(patientDescription: string): Promise<string[]> {
   if (!patientDescription.trim()) {

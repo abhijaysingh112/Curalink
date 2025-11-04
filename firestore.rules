@@ -24,7 +24,7 @@
  *   researchers. Access control is based on patientId, researcherId, and status.
  *
  * Key Security Decisions:
- * - User listing is disallowed.
+ * - User listing is disallowed, except for specific, constrained queries.
  * - Public read access is granted to publications and clinical trials.
  * - Strict ownership is enforced for user profiles and related data.
  * - All write operations are explicitly authorized.
@@ -106,7 +106,9 @@ service cloud.firestore {
      */
     match /users/{userId} {
       allow get: if isSignedIn();
-      allow list: if isSignedIn() && request.query.limit <= 10; 
+      allow list: if request.query.keys.hasOnly(['where', 'limit']) &&
+                   request.query.limit <= 10 &&
+                   (request.query.where[0][0] == 'userType' || request.query.where[0][0] == 'email');
       allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);

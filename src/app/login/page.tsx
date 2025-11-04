@@ -34,6 +34,7 @@ import { useFirebase } from '@/firebase';
 import { CuraLinkLogo } from '@/components/curalink-logo';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { checkIfUserExists } from '@/app/actions';
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address.'),
@@ -109,6 +110,22 @@ export default function LoginPage() {
   const onSignupSubmit = async (values: SignupFormValues) => {
     setIsLoading(true);
     try {
+      // Step 1: Check if the user exists in our Firestore database
+      const { exists, userType: existingUserType } = await checkIfUserExists(values.email);
+
+      if (exists) {
+        if (existingUserType && existingUserType !== userType) {
+          // User exists with a different role
+          toast({
+            variant: 'destructive',
+            title: 'Email Already Registered',
+            description: `This email is already registered as a ${existingUserType}. Please use a different email.`,
+          });
+          return; // Stop the sign-up process
+        }
+      }
+
+      // Step 2: If the check passes, proceed with creating the user in Firebase Auth
       await createUserWithEmailAndPassword(
         auth as Auth,
         values.email,
@@ -117,6 +134,8 @@ export default function LoginPage() {
       // Redirect to dashboard after successful signup
       router.push(`/${userType}/dashboard`);
     } catch (error: any) {
+      // This will catch errors from createUserWithEmailAndPassword, like auth/email-already-in-use
+      // if the user exists in Auth but not in our Firestore DB for some reason.
       handleAuthError(error, toast);
     } finally {
       setIsLoading(false);
