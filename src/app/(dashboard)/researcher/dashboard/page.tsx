@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/page-header';
 import { useUser, useFirebase, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
+import { MeetingRequests } from './_components/meeting-requests';
 
 export default function ResearcherDashboardPage() {
   const { user, isUserLoading } = useUser();
@@ -34,6 +35,9 @@ export default function ResearcherDashboardPage() {
         title={`Welcome back, ${researcherName}!`}
         description="An overview of your trials, collaborations, and community engagement."
       />
+
+      {user && <MeetingRequests researcherId={user.uid} />}
+
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="p-6 bg-card border rounded-lg">
           <h3 className="font-semibold text-lg">Manage Clinical Trials</h3>

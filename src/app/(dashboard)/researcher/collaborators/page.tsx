@@ -3,11 +3,10 @@ import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/page-header';
 import { ExpertCard } from '@/components/cards/expert-card';
 import type { Researcher } from '@/lib/types';
-import { researchers as mockResearchers } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -17,6 +16,7 @@ export default function CollaboratorsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const { firestore } = useFirebase();
+    const { user: currentUser } = useUser();
 
     const usersQuery = useMemoFirebase(() => {
         if (!firestore) return null;
@@ -37,14 +37,14 @@ export default function CollaboratorsPage() {
              // The useCollection hook already emits the error, so we just log it and handle UI state.
              console.error("Error fetching researcher users:", usersError);
              setIsLoading(false);
-             // Optionally fallback to mock data if needed
-             setResearchers(mockResearchers);
              return;
         }
 
         if (researcherUsers) {
             const fetchProfiles = async () => {
-                const profilesPromises = researcherUsers.map(async (user) => {
+                const profilesPromises = researcherUsers
+                .filter(user => user.id !== currentUser?.uid) // Filter out the current user
+                .map(async (user) => {
                     const profileCollectionRef = collection(firestore, 'users', user.id, 'researcher_profile');
                     try {
                         const profileSnap = await getDocs(profileCollectionRef);
@@ -83,7 +83,7 @@ export default function CollaboratorsPage() {
              setResearchers([]);
         }
 
-    }, [researcherUsers, usersLoading, usersError, firestore]);
+    }, [researcherUsers, usersLoading, usersError, firestore, currentUser]);
 
     const filteredResearchers = researchers.filter(r => 
         r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -120,7 +120,7 @@ export default function CollaboratorsPage() {
                         ))
                     ) : (
                          <div className="text-center py-12 text-muted-foreground col-span-full">
-                            <p>No researchers found matching your criteria.</p>
+                            <p>No other researchers found.</p>
                          </div>
                     )}
                 </div>
