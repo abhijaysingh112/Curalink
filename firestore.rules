@@ -10,9 +10,9 @@
  * Data Structure:
  * - /users/{userId}: Stores user profile information. Only the authenticated user
  *   can access their own profile.
- * - /users/{userId}/patient_profile: Stores patient-specific profile information.
+ * - /users/{userId}/patient_profile/{profileId}: Stores patient-specific profile information.
  *   Only the authenticated user can access their own patient profile.
- * - /users/{userId}/researcher_profile: Stores researcher-specific profile information.
+ * - /users/{userId}/researcher_profile/{profileId}: Stores researcher-specific profile information.
  *   Only the authenticated user can access their own researcher profile.
  * - /publications/{publicationId}: Stores publication data. Publicly readable.
  * - /clinical_trials/{clinicalTrialId}: Stores clinical trial data. Publicly readable.
@@ -100,14 +100,14 @@ service cloud.firestore {
 
     /**
      * @description Rules for the /users/{userId}/patient_profile collection.
-     * @path /users/{userId}/patient_profile
+     * @path /users/{userId}/patient_profile/{profileId}
      * @allow (create) User with ID 'user123' creates their patient profile: auth.uid == 'user123'
      * @deny (create) User with ID 'user123' tries to create a patient profile for 'user456': auth.uid != 'user123'
      * @allow (get) User with ID 'user123' reads their own patient profile: auth.uid == 'user123'
      * @deny (get) User with ID 'user123' tries to read patient profile for 'user456': auth.uid != 'user123'
      * @principle Enforces document ownership for writes and reads.
      */
-    match /users/{userId}/patient_profile {
+    match /users/{userId}/patient_profile/{profileId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && matchesAuthUserId();
@@ -117,14 +117,14 @@ service cloud.firestore {
 
     /**
      * @description Rules for the /users/{userId}/researcher_profile collection.
-     * @path /users/{userId}/researcher_profile
+     * @path /users/{userId}/researcher_profile/{profileId}
      * @allow (create) User with ID 'user123' creates their researcher profile: auth.uid == 'user123'
      * @deny (create) User with ID 'user123' tries to create a researcher profile for 'user456': auth.uid != 'user123'
      * @allow (get) User with ID 'user123' reads their own researcher profile: auth.uid == 'user123'
      * @deny (get) User with ID 'user123' tries to read researcher profile for 'user456': auth.uid != 'user123'
      * @principle Enforces document ownership for writes and reads.
      */
-    match /users/{userId}/researcher_profile {
+    match /users/{userId}/researcher_profile/{profileId} {
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
       allow create: if isOwner(userId) && matchesAuthUserId();
