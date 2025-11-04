@@ -1,18 +1,20 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useFirebase, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, where } from 'firebase/firestore';
+import { useFirebase, useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
+import { PostCard } from './_components/post-card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
-import { PostCard } from './_components/post-card';
-import { QuestionForm } from './_components/question-form';
+import { ReplyForm } from './_components/reply-form';
+
 
 interface Forum {
     name: string;
     description: string;
+    patientId: string;
 }
 
 interface Post {
@@ -27,6 +29,7 @@ export default function ForumPage() {
     const params = useParams();
     const { forumId } = params;
     const { firestore } = useFirebase();
+    const { user } = useUser();
 
     // Fetch Forum Details
     const forumDocRef = useMemoFirebase(() => {
@@ -42,9 +45,10 @@ export default function ForumPage() {
     }, [firestore, forumId]);
     const { data: posts, isLoading: arePostsLoading } = useCollection<Post>(postsQuery);
 
-    // A single forum should have only one patient question.
     const patientPost = posts?.find(p => p.userType === 'patient');
     const researcherReplies = posts?.filter(p => p.userType === 'researcher') || [];
+
+    const isMyForum = user && forum && user.uid === forum.patientId;
 
     if (isForumLoading || arePostsLoading) {
         return (
@@ -87,12 +91,11 @@ export default function ForumPage() {
                 <>
                 <Alert>
                     <Terminal className="h-4 w-4" />
-                    <AlertTitle>Be the First to Ask!</AlertTitle>
+                    <AlertTitle>Discussion not started</AlertTitle>
                     <AlertDescription>
-                        No one has asked a question in this forum yet. Use the form below to post your question to the experts.
+                        This forum has been created, but the initial question hasn't been posted yet.
                     </AlertDescription>
                 </Alert>
-                <QuestionForm forumId={forumId as string} />
                 </>
             )}
         </div>

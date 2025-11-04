@@ -1,21 +1,19 @@
-
 'use client';
 
 import { PageHeader } from '@/components/page-header';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { MessagesSquare } from 'lucide-react';
-import { CreateForumDialog } from './_components/create-forum-dialog';
 
 interface Forum {
     id: string;
     name: string;
     description: string;
-    researcherId: string;
+    patientId: string;
 }
 
 export default function ForumsPage() {
@@ -23,7 +21,7 @@ export default function ForumsPage() {
 
     const forumsQuery = useMemoFirebase(() => {
         if (!firestore) return null;
-        return query(collection(firestore, 'forums'), orderBy('name'));
+        return query(collection(firestore, 'forums'), orderBy('createdAt', 'desc'));
     }, [firestore]);
 
     const { data: forums, isLoading } = useCollection<Forum>(forumsQuery);
@@ -33,9 +31,8 @@ export default function ForumsPage() {
             <div className="flex justify-between items-start">
                 <PageHeader
                     title="Community Forums"
-                    description="Engage in discussions, answer patient questions, and create new communities."
+                    description="Answer patient questions and contribute to discussions."
                 />
-                <CreateForumDialog />
             </div>
 
             {isLoading && (
@@ -50,13 +47,13 @@ export default function ForumsPage() {
                         <Card key={forum.id}>
                             <CardHeader>
                                 <CardTitle className="font-headline">{forum.name}</CardTitle>
-                                <CardDescription>{forum.description}</CardDescription>
+                                <CardDescription className="truncate">{forum.description}</CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <Link href={`/researcher/forums/${forum.id}`} passHref>
                                     <Button className="w-full">
                                         <MessagesSquare className="mr-2 h-4 w-4" />
-                                        View Forum
+                                        View Discussion
                                     </Button>
                                 </Link>
                             </CardContent>
@@ -67,8 +64,8 @@ export default function ForumsPage() {
 
             {!isLoading && (!forums || forums.length === 0) && (
                 <div className="text-center py-12 text-muted-foreground bg-card border rounded-lg">
-                    <p className="font-semibold">No forums found.</p>
-                    <p>Be the first to create a community forum!</p>
+                    <p className="font-semibold">No patient questions yet.</p>
+                    <p>Check back later to find new questions to answer.</p>
                 </div>
             )}
         </div>

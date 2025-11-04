@@ -13,14 +13,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
-  content: z.string().min(10, 'Please enter a question with at least 10 characters.'),
+  content: z.string().min(1, 'Reply cannot be empty.'),
 });
 
-interface QuestionFormProps {
+interface ReplyFormProps {
     forumId: string;
 }
 
-export function QuestionForm({ forumId }: QuestionFormProps) {
+export function ReplyForm({ forumId }: ReplyFormProps) {
   const { user } = useUser();
   const { firestore } = useFirebase();
   const { toast } = useToast();
@@ -37,7 +37,7 @@ export function QuestionForm({ forumId }: QuestionFormProps) {
       toast({
         variant: 'destructive',
         title: 'Not logged in',
-        description: 'You must be logged in to post a question.',
+        description: 'You must be logged in to post a reply.',
       });
       return;
     }
@@ -46,7 +46,7 @@ export function QuestionForm({ forumId }: QuestionFormProps) {
     const newPostData = {
         content: values.content,
         userId: user.uid,
-        userType: 'patient',
+        userType: 'researcher', // This form is for researchers to reply
         forumId: forumId,
         timestamp: serverTimestamp(),
       };
@@ -56,8 +56,8 @@ export function QuestionForm({ forumId }: QuestionFormProps) {
     // Optimistically update UI
     form.reset();
     toast({
-        title: 'Question Posted!',
-        description: 'Your question has been posted for experts to answer.',
+        title: 'Reply posted!',
+        description: 'Your reply has been added to the discussion.',
     });
   };
 
@@ -77,7 +77,7 @@ export function QuestionForm({ forumId }: QuestionFormProps) {
                         <FormItem>
                         <FormControl>
                             <Textarea
-                                placeholder="Ask your question here... Be specific and provide relevant details."
+                                placeholder="Share your expertise and answer the patient's question..."
                                 className="min-h-[100px]"
                                 {...field}
                             />
@@ -93,7 +93,7 @@ export function QuestionForm({ forumId }: QuestionFormProps) {
                             ) : (
                                 <Send className="mr-2 h-4 w-4" />
                             )}
-                           Post Question
+                           Post Reply
                         </Button>
                     </div>
                 </form>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useFirebase, useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useFirebase, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, orderBy } from 'firebase/firestore';
 import { PageHeader } from '@/components/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,7 +27,6 @@ export default function ForumPage() {
     const params = useParams();
     const { forumId } = params;
     const { firestore } = useFirebase();
-    const { user } = useUser();
 
     // Fetch Forum Details
     const forumDocRef = useMemoFirebase(() => {
@@ -86,16 +85,13 @@ export default function ForumPage() {
                     <ReplyForm forumId={forumId as string} />
                  </div>
             ) : (
-                <>
                 <Alert>
                     <Terminal className="h-4 w-4" />
-                    <AlertTitle>No Patient Question Found</AlertTitle>
+                    <AlertTitle>No Question Posted</AlertTitle>
                     <AlertDescription>
-                        This forum does not have a question from a patient yet. In a complete application, patients would initiate posts in forums created by researchers.
+                        A patient has started this forum topic, but hasn't posted their question yet.
                     </AlertDescription>
                 </Alert>
-                <ReplyForm forumId={forumId as string} postAsQuestion />
-                </>
             )}
         </div>
     );

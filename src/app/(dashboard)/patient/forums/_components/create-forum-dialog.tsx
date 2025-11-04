@@ -21,12 +21,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { useUser, useFirebase } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, serverTimestamp } from 'firebase/firestore';
+import { collection, serverTimestamp, addDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
-  name: z.string().min(5, 'Forum name must be at least 5 characters.'),
-  description: z.string().min(10, 'Description must be at least 10 characters.'),
+  name: z.string().min(5, 'Question title must be at least 5 characters.'),
+  description: z.string().min(10, 'Please provide more details for your question.'),
 });
 
 export function CreateForumDialog() {
@@ -52,19 +52,44 @@ export function CreateForumDialog() {
       return;
     }
     
-    const forumsColRef = collection(firestore, 'forums');
-    addDocumentNonBlocking(forumsColRef, {
-        ...values,
-        researcherId: user.uid,
-        createdAt: serverTimestamp(),
-    });
+    // This is now an async function to get the doc ref for the post
+    try {
+      const forumsColRef = collection(firestore, 'forums');
+      const newForumData = {
+          name: values.name,
+          description: values.description,
+          patientId: user.uid, // Patient creates the forum
+          createdAt: serverTimestamp(),
+      };
+      
+      // Create the forum document and get its reference
+      const forumDocRef = await addDoc(forumsColRef, newForumData);
 
-    toast({
-      title: 'Forum Created!',
-      description: `The "${values.name}" forum is now live.`,
-    });
-    form.reset();
-    setIsOpen(false);
+      // Immediately add the initial question as the first post in the forum
+      const postsColRef = collection(firestore, 'forums', forumDocRef.id, 'posts');
+      addDocumentNonBlocking(postsColRef, {
+          content: values.description,
+          userId: user.uid,
+          userType: 'patient',
+          forumId: forumDocRef.id,
+          timestamp: serverTimestamp(),
+      });
+
+      toast({
+        title: 'Question Posted!',
+        description: `Your question "${values.name}" is now live for experts to answer.`,
+      });
+      form.reset();
+      setIsOpen(false);
+
+    } catch (error) {
+       console.error("Error creating forum:", error);
+       toast({
+         variant: 'destructive',
+         title: 'Error',
+         description: 'Could not post your question. Please try again.',
+       });
+    }
   };
 
   return (
@@ -72,14 +97,14 @@ export function CreateForumDialog() {
       <DialogTrigger asChild>
         <Button>
           <PlusCircle className="mr-2 h-4 w-4" />
-          Create Forum
+          Ask a New Question
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Create a New Forum</DialogTitle>
+          <DialogTitle>Ask a New Question</DialogTitle>
           <DialogDescription>
-            Start a new community discussion on a specific topic.
+            Create a new discussion topic for researchers to answer.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -89,9 +114,9 @@ export function CreateForumDialog() {
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Forum Name</FormLabel>
+                  <FormLabel>Question Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., CAR-T Cell Therapy Advances" {...field} />
+                    <Input placeholder="e.g., Best treatments for Glioma?" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -102,10 +127,10 @@ export function CreateForumDialog() {
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Description</FormLabel>
+                  <FormLabel>Your Question in Detail</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="A brief description of what this forum is about."
+                      placeholder="Provide background, what you've tried, and what you want to know."
                       {...field}
                     />
                   </FormControl>
@@ -119,7 +144,7 @@ export function CreateForumDialog() {
               </DialogClose>
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create
+                Post Question
               </Button>
             </DialogFooter>
           </form>

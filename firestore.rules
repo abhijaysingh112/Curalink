@@ -80,6 +80,20 @@ service cloud.firestore {
     function isUserIdImmutable() {
       return request.resource.data.userId == resource.data.userId;
     }
+    
+    /**
+     * @description Checks if the user has the 'patient' userType.
+     */
+    function isPatient() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'patient';
+    }
+
+    /**
+     * @description Checks if the user has the 'researcher' userType.
+     */
+    function isResearcher() {
+        return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'researcher';
+    }
 
     /**
      * @description Rules for the /users/{userId} collection.
@@ -91,11 +105,8 @@ service cloud.firestore {
      * @principle Enforces document ownership for writes and reads.
      */
     match /users/{userId} {
-      // Allow reading of any user document if signed in (for finding experts),
-      // but only allow updates/deletes if the user is the owner.
-      // List is still false to prevent fetching all users at once.
       allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow list: if isSignedIn() && request.query.limit <= 10; 
       allow create: if isOwner(userId) && request.resource.data.id == request.auth.uid;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
@@ -176,39 +187,39 @@ service cloud.firestore {
    /**
     * @description Rules for the /forums/{forumId} collection.
     * @path /forums/{forumId}
-    * @allow (create) A researcher can create a forum if the researcherId matches their user ID.
-    * @deny (create) A user cannot create a forum for another researcher.
+    * @allow (create) A patient can create a forum.
     * @allow (get) Any authenticated user can read forum data.
     * @allow (list) Any authenticated user can list forums.
-    * @deny (update) Only the researcher who created the forum can update it.
-    * @deny (delete) Only the researcher who created the forum can delete it.
-    * @principle Enforces ownership based on the researcherId field within the forum document.
+    * @deny (update) Only the patient who created the forum can update it.
+    * @deny (delete) Only the patient who created the forum can delete it.
+    * @principle Enforces ownership based on the patientId field within the forum document.
     */
     match /forums/{forumId} {
         allow get: if isSignedIn();
         allow list: if isSignedIn();
-        allow create: if isSignedIn() && request.resource.data.researcherId == request.auth.uid;
-        allow update: if isSignedIn() && resource.data.researcherId == request.auth.uid && resource != null;
-        allow delete: if isSignedIn() && resource.data.researcherId == request.auth.uid && resource != null;
+        allow create: if isSignedIn() && isPatient() && request.resource.data.patientId == request.auth.uid;
+        allow update: if isSignedIn() && isPatient() && resource.data.patientId == request.auth.uid;
+        allow delete: if isSignedIn() && isPatient() && resource.data.patientId == request.auth.uid;
     }
 
    /**
     * @description Rules for the /forums/{forumId}/posts/{postId} collection.
     * @path /forums/{forumId}/posts/{postId}
-    * @allow (create) An authenticated user can create a post in a forum.
-    * @deny (create) An unauthenticated user cannot create a post.
+    * @allow (create) An authenticated user can create a post. Patients create the first post, researchers reply.
     * @allow (get) Any authenticated user can read a post.
     * @allow (list) Any authenticated user can list posts in a forum.
-    * @deny (update) Only the user who created the post can update it.
-    * @deny (delete) Only the user who created the post can delete it.
-    * @principle Enforces authentication and allows posts to be created and read by authenticated users.
+    * @deny (update) Posts are immutable.
+    * @deny (delete) Posts are immutable.
     */
     match /forums/{forumId}/posts/{postId} {
         allow get: if isSignedIn();
         allow list: if isSignedIn();
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid && request.resource.data.forumId == forumId;
-        allow update: if false; // Only the creator can update the post
-        allow delete: if false; // Only the creator can delete the post
+        allow create: if isSignedIn() && (
+            (isPatient() && request.resource.data.userType == 'patient' && request.resource.data.userId == request.auth.uid) ||
+            (isResearcher() && request.resource.data.userType == 'researcher' && request.resource.data.userId == request.auth.uid)
+        );
+        allow update: if false; // Posts are immutable
+        allow delete: if false; // Posts are immutable
     }
 
 
