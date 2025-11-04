@@ -20,10 +20,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isProfilePage = pathname === profilePath;
 
   const profileDocRef = useMemoFirebase(() => {
-    if (!user || !firestore || isProfilePage) return null;
+    if (!user || !firestore) return null;
     const profileCollection = userType === 'patient' ? 'patient_profile' : 'researcher_profile';
     return doc(firestore, 'users', user.uid, profileCollection, user.uid);
-  }, [user, firestore, userType, isProfilePage]);
+  }, [user, firestore, userType]);
 
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileDocRef);
   
