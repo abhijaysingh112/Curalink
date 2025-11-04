@@ -7,8 +7,10 @@ import { researchers as mockResearchers } from '@/lib/data';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
-import { useFirebase } from '@/firebase';
-import { collection, getDocs, query } from 'firebase/firestore';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export default function CollaboratorsPage() {
     const [researchers, setResearchers] = useState<Researcher[]>([]);
@@ -16,22 +18,36 @@ export default function CollaboratorsPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const { firestore } = useFirebase();
 
-    useEffect(() => {
-        const fetchResearchers = async () => {
-            if (!firestore) return;
-            setIsLoading(true);
+    const usersQuery = useMemoFirebase(() => {
+        if (!firestore) return null;
+        // Query for users who are researchers
+        return query(collection(firestore, 'users'), where("userType", "==", "researcher"));
+    }, [firestore]);
 
-            // This is a simplified fetch. In a real-world app with many users,
-            // this would need pagination and more robust querying/indexing.
-            try {
-                const q = query(collection(firestore, 'users'));
-                const querySnapshot = await getDocs(q);
-                const allUsers = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                
-                const researcherProfilesPromises = allUsers
-                    .filter((user: any) => user.userType === 'researcher')
-                    .map(async (user: any) => {
-                        const profileSnap = await getDocs(query(collection(firestore, 'users', user.id, 'researcher_profile')));
+    // Use useCollection for live updates, though getDocs would also work for a one-time fetch.
+    const { data: researcherUsers, isLoading: usersLoading, error: usersError } = useCollection<any>(usersQuery);
+
+    useEffect(() => {
+        if (usersLoading || !firestore) {
+            setIsLoading(true);
+            return;
+        }
+        
+        if (usersError) {
+             // The useCollection hook already emits the error, so we just log it and handle UI state.
+             console.error("Error fetching researcher users:", usersError);
+             setIsLoading(false);
+             // Optionally fallback to mock data if needed
+             setResearchers(mockResearchers);
+             return;
+        }
+
+        if (researcherUsers) {
+            const fetchProfiles = async () => {
+                const profilesPromises = researcherUsers.map(async (user) => {
+                    const profileCollectionRef = collection(firestore, 'users', user.id, 'researcher_profile');
+                    try {
+                        const profileSnap = await getDocs(profileCollectionRef);
                         if (!profileSnap.empty) {
                             const profile = profileSnap.docs[0].data();
                             return {
@@ -45,23 +61,29 @@ export default function CollaboratorsPage() {
                                 isAvailableForMeetings: profile.availableForMeetings || false,
                             } as Researcher;
                         }
-                        return null;
-                    });
-                
-                const resolvedProfiles = (await Promise.all(researcherProfilesPromises)).filter(p => p !== null) as Researcher[];
+                    } catch (e: any) {
+                        // If fetching subcollection fails, emit error
+                        const contextualError = new FirestorePermissionError({
+                            operation: 'list',
+                            path: profileCollectionRef.path
+                        });
+                        errorEmitter.emit('permission-error', contextualError);
+                        console.error(`Could not fetch profile for ${user.id}:`, e);
+                    }
+                    return null;
+                });
+
+                const resolvedProfiles = (await Promise.all(profilesPromises)).filter(p => p !== null) as Researcher[];
                 setResearchers(resolvedProfiles);
-
-            } catch (error) {
-                console.error("Error fetching researchers:", error);
-                // Fallback to mock data on error
-                setResearchers(mockResearchers);
-            } finally {
                 setIsLoading(false);
-            }
-        };
+            };
+            fetchProfiles();
+        } else {
+             setIsLoading(false);
+             setResearchers([]);
+        }
 
-        fetchResearchers();
-    }, [firestore]);
+    }, [researcherUsers, usersLoading, usersError, firestore]);
 
     const filteredResearchers = researchers.filter(r => 
         r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -99,7 +121,7 @@ export default function CollaboratorsPage() {
                     ) : (
                          <div className="text-center py-12 text-muted-foreground col-span-full">
                             <p>No researchers found matching your criteria.</p>
-                        </div>
+                         </div>
                     )}
                 </div>
             )}

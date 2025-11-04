@@ -10,6 +10,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Send } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
   content: z.string().min(1, 'Reply cannot be empty.'),
@@ -45,27 +46,23 @@ export function ReplyForm({ forumId, postAsQuestion = false }: ReplyFormProps) {
       return;
     }
 
-    try {
-      const postsColRef = collection(firestore, 'forums', forumId, 'posts');
-      await addDoc(postsColRef, {
+    const postsColRef = collection(firestore, 'forums', forumId, 'posts');
+    const newPostData = {
         content: values.content,
         userId: user.uid,
         userType: 'researcher', // Hardcoded for this form
+        forumId: forumId,
         timestamp: serverTimestamp(),
-      });
-      form.reset();
-      toast({
+      };
+
+    addDocumentNonBlocking(postsColRef, newPostData);
+    
+    // Optimistically update UI
+    form.reset();
+    toast({
         title: 'Reply posted!',
         description: 'Your reply has been added to the discussion.',
-      });
-    } catch (error: any) {
-      console.error("Error posting reply: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'Could not post your reply. Please try again.',
-      });
-    }
+    });
   };
 
   if (!user) {

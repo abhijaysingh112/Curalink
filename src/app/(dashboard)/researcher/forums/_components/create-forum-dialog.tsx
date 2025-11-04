@@ -21,7 +21,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { PlusCircle, Loader2 } from 'lucide-react';
 import { useUser, useFirebase } from '@/firebase';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection } from 'firebase/firestore';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 
 const formSchema = z.object({
@@ -34,12 +34,13 @@ export function CreateForumDialog() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { name: '', description: '' },
   });
+
+  const { isSubmitting } = form.formState;
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!user || !firestore) {
@@ -50,32 +51,20 @@ export function CreateForumDialog() {
       });
       return;
     }
-    setIsSubmitting(true);
     
-    try {
-        const forumsColRef = collection(firestore, 'forums');
-        await addDocumentNonBlocking(forumsColRef, {
-            ...values,
-            researcherId: user.uid,
-            createdAt: new Date(),
-        });
+    const forumsColRef = collection(firestore, 'forums');
+    addDocumentNonBlocking(forumsColRef, {
+        ...values,
+        researcherId: user.uid,
+        createdAt: serverTimestamp(),
+    });
 
-      toast({
-        title: 'Forum Created!',
-        description: `The "${values.name}" forum is now live.`,
-      });
-      form.reset();
-      setIsOpen(false);
-    } catch (error) {
-      console.error('Error creating forum:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Creating Forum',
-        description: 'An unexpected error occurred. Please try again.',
-      });
-    } finally {
-        setIsSubmitting(false);
-    }
+    toast({
+      title: 'Forum Created!',
+      description: `The "${values.name}" forum is now live.`,
+    });
+    form.reset();
+    setIsOpen(false);
   };
 
   return (
