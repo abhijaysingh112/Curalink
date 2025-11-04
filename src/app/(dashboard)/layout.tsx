@@ -28,14 +28,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { data: profile, isLoading: isProfileLoading } = useDoc(profileDocRef);
   
   useEffect(() => {
-    // If we are not on a loading state, we have a user, but we're not on the profile page and the profile doc doesn't exist...
-    if (!isUserLoading && !isProfileLoading && user && !isProfilePage && !profile) {
-      // ...redirect to the profile page.
-      router.replace(profilePath);
+    // Wait until both user and profile loading states are resolved
+    if (isUserLoading || isProfileLoading) {
+      return; // Don't do anything while loading
     }
-  }, [isUserLoading, isProfileLoading, user, profile, isProfilePage, profilePath, router]);
+    
+    // If we have a logged-in user, but they don't have a profile document...
+    if (user && !profile) {
+        // ...and they are NOT already on the profile page, redirect them.
+        if (!isProfilePage) {
+            router.replace(profilePath);
+        }
+    }
+  }, [user, profile, isUserLoading, isProfileLoading, isProfilePage, profilePath, router]);
 
-  // While checking, show a loading skeleton to prevent flashes of content
+  // While loading, if the user is not on the profile page, show a skeleton.
+  // This prevents content flashes and shows a loading state.
   if ((isUserLoading || isProfileLoading) && !isProfilePage) {
     return (
       <DashboardLayoutComponent userType={userType}>
@@ -51,6 +59,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     );
   }
   
-  // If user is on profile page, or has a profile, or is not logged in yet, show the children
+  // If loading is complete, or if it's the profile page, render the children
   return <DashboardLayoutComponent userType={userType}>{children}</DashboardLayoutComponent>;
 }

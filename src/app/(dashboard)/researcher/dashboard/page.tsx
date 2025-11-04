@@ -1,10 +1,37 @@
+
+'use client';
+
+import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/page-header';
+import { useUser, useFirebase, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 export default function ResearcherDashboardPage() {
+  const { user, isUserLoading } = useUser();
+  const { firestore } = useFirebase();
+  const [researcherName, setResearcherName] = useState('there');
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [user, firestore]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc<{firstName: string}>(userDocRef);
+
+  useEffect(() => {
+    if (isUserLoading || isProfileLoading) {
+      setResearcherName('there');
+    } else if (userProfile) {
+      setResearcherName(userProfile.firstName || 'there');
+    }
+  }, [userProfile, isUserLoading, isProfileLoading]);
+
+
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Researcher Dashboard"
+        title={`Welcome back, ${researcherName}!`}
         description="An overview of your trials, collaborations, and community engagement."
       />
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
