@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import {
   Query,
   onSnapshot,
+  doc,
   DocumentData,
   FirestoreError,
   QuerySnapshot,
@@ -58,13 +59,14 @@ export function useCollection<T = any>(
   type StateDataType = ResultItemType[] | null;
 
   const [data, setData] = useState<StateDataType>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start as true
   const [error, setError] = useState<FirestoreError | Error | null>(null);
 
   useEffect(() => {
+    // If the query is not ready, set loading to true and wait.
     if (!memoizedTargetRefOrQuery) {
+      setIsLoading(true);
       setData(null);
-      setIsLoading(false);
       setError(null);
       return;
     }
@@ -72,7 +74,6 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
-    // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
@@ -106,9 +107,11 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [memoizedTargetRefOrQuery]);
+  
   if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
+    throw new Error('useCollection query must be memoized with useMemoFirebase');
   }
+
   return { data, isLoading, error };
 }
