@@ -39,12 +39,6 @@ export default function PatientDashboardPage() {
       setPatientName('there');
     } else if (userProfile) {
       setPatientName(userProfile.firstName || 'there');
-    } else {
-        const storedProfile = localStorage.getItem('patientProfile');
-        if (storedProfile) {
-          const profile = JSON.parse(storedProfile);
-          setPatientName(profile.name?.split(' ')[0] || 'there');
-        }
     }
   }, [userProfile, isUserLoading, isProfileLoading]);
 

@@ -104,10 +104,6 @@ export function ResearcherProfileForm() {
     setDocumentNonBlocking(researcherProfileRef, researcherProfileData, { merge: true });
     setDocumentNonBlocking(userProfileRef, userProfileData, { merge: true });
 
-    // For instant UI update, we'll still use local storage for the dashboard redirect
-    localStorage.setItem('researcherProfile', JSON.stringify({ name: values.name }));
-    localStorage.setItem('userProfile', JSON.stringify(userProfileData));
-
     router.push('/researcher/dashboard');
   }
 
