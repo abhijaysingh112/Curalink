@@ -45,12 +45,7 @@ Based on the conversation history and the user's latest question, provide a help
 
 {{#if history}}
 {{#each history}}
-{{#if (eq role 'user')}}
-User: {{{content.[0].text}}}
-{{/if}}
-{{#if (eq role 'model')}}
-You: {{{content.[0].text}}}
-{{/if}}
+{{role}}: {{{this.content.[0].text}}}
 {{/each}}
 {{/if}}
 
