@@ -3,6 +3,7 @@ import { Poppins, PT_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { AiAssistant } from '@/components/ai-assistant';
 
 const fontHeadline = Poppins({
   subsets: ['latin'],
@@ -33,6 +34,7 @@ export default function RootLayout({
       >
         <FirebaseClientProvider>
           {children}
+          <AiAssistant />
           <Toaster />
         </FirebaseClientProvider>
       </body>
