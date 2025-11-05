@@ -86,6 +86,14 @@
           "type": "string",
           "description": "Reference to User. (Relationship: User 1:1 ResearcherProfile)"
         },
+        "bio": {
+          "type": "string",
+          "description": "A professional biography of the researcher."
+        },
+        "location": {
+          "type": "string",
+          "description": "The institution or location of the researcher."
+        },
         "specialties": {
           "type": "array",
           "description": "Specialties of the researcher.",
@@ -116,6 +124,8 @@
       "required": [
         "id",
         "userId",
+        "bio",
+        "location",
         "specialties",
         "researchInterests",
         "availableForMeetings"

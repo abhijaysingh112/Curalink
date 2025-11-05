@@ -28,7 +28,7 @@ import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 const formSchema = z.object({
   name: z.string().min(2, 'Please enter your name.'),
-  bio: z.string().min(10, 'Please provide a professional bio.'),
+  bio: z.string().min(10, 'Please provide a professional bio.').max(500, 'Bio must be less than 500 characters.'),
   location: z.string().min(2, 'Please enter your location (e.g., university, city).'),
   orcidId: z.string().optional(),
   researchGateId: z.string().optional(),
@@ -78,11 +78,13 @@ export function ResearcherProfileForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!user || !firestore) return;
     
-    const { name, isAvailableForMeetings, orcidId, researchGateId } = values;
+    const { name, bio, location, isAvailableForMeetings, orcidId, researchGateId } = values;
 
     const researcherProfileData = {
         id: user.uid,
         userId: user.uid,
+        bio,
+        location,
         specialties,
         researchInterests,
         availableForMeetings: isAvailableForMeetings,
@@ -137,7 +139,7 @@ export function ResearcherProfileForm() {
                 />
               </FormControl>
               <FormDescription>
-                Briefly describe your expertise and research focus.
+                Briefly describe your expertise and research focus. (Max 500 characters)
               </FormDescription>
               <FormMessage />
             </FormItem>
