@@ -1,5 +1,3 @@
-# Firebase Studio
+**CuraLink**
 
-This is a NextJS starter in Firebase Studio.
-
-To get started, take a look at src/app/page.tsx.
+An AI-powered healthcare platform that connects patients, doctors, and hospitals through intelligent, personalized medical assistance.
