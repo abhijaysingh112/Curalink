@@ -5,7 +5,7 @@ import { detectPatientConditions } from '@/ai/flows/patient-profile-condition-de
 import { summarizeClinicalTrial } from '@/ai/flows/clinical-trial-ai-summaries';
 import { generatePublicationSummary } from '@/ai/flows/researcher-publication-summaries';
 import { publications as mockPublications } from '@/lib/data';
-import type { ClinicalTrial, Publication } from '@/lib/types';
+import type { ClinicalTrial, Publication, Researcher } from '@/lib/types';
 import { initializeFirebase } from '@/firebase/server-init';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 
@@ -169,4 +169,36 @@ export async function getPublications(): Promise<Publication[]> {
     // Fallback to mock data if the API fails
     return mockPublications;
   }
+}
+
+export async function getExternalExperts(): Promise<Researcher[]> {
+    console.log("Fetching external experts from simulated API...");
+    // In a real application, this would be an actual API call.
+    // For this demo, we'll return a static list of hardcoded experts.
+    const externalExperts: Researcher[] = [
+        {
+            id: 'ext-expert-1',
+            name: 'Dr. Evelyn Reed',
+            avatarUrl: 'https://picsum.photos/seed/ext-1/100/100',
+            imageHint: 'woman scientist',
+            specialties: ['Pediatric Oncology'],
+            researchInterests: ['Neuroblastoma', 'Childhood Cancers'],
+            publications: [],
+            isAvailableForMeetings: false,
+            isExternal: true,
+        },
+        {
+            id: 'ext-expert-2',
+            name: 'Dr. Samuel Chen',
+            avatarUrl: 'https://picsum.photos/seed/ext-2/100/100',
+            imageHint: 'man researcher',
+            specialties: ['Dermatology'],
+            researchInterests: ['Melanoma', 'Psoriasis'],
+            publications: [],
+            isAvailableForMeetings: false,
+            isExternal: true,
+        },
+    ];
+
+    return new Promise(resolve => setTimeout(() => resolve(externalExperts), 1000));
 }

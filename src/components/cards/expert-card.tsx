@@ -1,16 +1,17 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Researcher } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { UserPlus, UserCheck, MessageSquare } from 'lucide-react';
+import { UserPlus, UserCheck, MessageSquare, ExternalLink } from 'lucide-react';
 import Image from 'next/image';
 import { useUser, useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, addDoc, deleteDoc, getDocs } from 'firebase/firestore';
+import { collection, query, where, addDoc, deleteDoc, getDocs, doc } from 'firebase/firestore';
 import { MeetingRequestDialog } from '../meeting-request-dialog';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 interface ExpertCardProps {
   expert: Researcher;
@@ -25,18 +26,18 @@ export function ExpertCard({ expert }: ExpertCardProps) {
 
   // Memoize the query to prevent re-renders
   const favoritesQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
+    if (!user || !firestore || expert.isExternal) return null; // Don't query for external experts
     return query(
       collection(firestore, 'users', user.uid, 'favorites'),
       where('itemType', '==', 'expert'),
       where('itemId', '==', expert.id)
     );
-  }, [user, firestore, expert.id]);
+  }, [user, firestore, expert.id, expert.isExternal]);
 
   // useCollection will update when the query result changes.
   const { data: favorites, isLoading } = useCollection(favoritesQuery);
 
-  useState(() => {
+  useEffect(() => {
     if (favorites && favorites.length > 0) {
       setIsFollowing(true);
       setFavoriteId(favorites[0].id);
@@ -44,11 +45,11 @@ export function ExpertCard({ expert }: ExpertCardProps) {
       setIsFollowing(false);
       setFavoriteId(null);
     }
-  });
+  }, [favorites]);
 
 
   const handleFollow = async () => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || expert.isExternal) return;
     const favoritesColRef = collection(firestore, 'users', user.uid, 'favorites');
     
     if (isFollowing && favoriteId) {
@@ -70,9 +71,25 @@ export function ExpertCard({ expert }: ExpertCardProps) {
     }
   };
 
+  const isActionDisabled = !user || expert.isExternal;
+
   return (
     <>
-      <Card className="flex flex-col">
+      <Card className="flex flex-col relative">
+        {expert.isExternal && (
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <div className="absolute top-2 right-2 p-1.5 bg-secondary text-secondary-foreground rounded-full">
+                            <ExternalLink className="h-4 w-4" />
+                        </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>This expert is not on the CuraLink platform.</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+        )}
         <CardHeader className="flex flex-row items-center gap-4">
           <Avatar className="h-16 w-16 border">
             <Image src={expert.avatarUrl} alt={expert.name} width={64} height={64} data-ai-hint={expert.imageHint} />
@@ -96,7 +113,7 @@ export function ExpertCard({ expert }: ExpertCardProps) {
           </div>
         </CardContent>
         <CardFooter className="flex gap-2">
-          <Button variant="outline" className="flex-1" onClick={handleFollow} disabled={!user || isLoading}>
+          <Button variant="outline" className="flex-1" onClick={handleFollow} disabled={isActionDisabled || isLoading}>
             {isFollowing ? (
               <UserCheck className="mr-2 h-4 w-4" />
             ) : (
@@ -105,13 +122,13 @@ export function ExpertCard({ expert }: ExpertCardProps) {
             {isFollowing ? 'Following' : 'Follow'}
           </Button>
           {expert.isAvailableForMeetings && (
-              <Button className="flex-1" onClick={() => setIsDialogOpen(true)} disabled={!user}>
+              <Button className="flex-1" onClick={() => setIsDialogOpen(true)} disabled={isActionDisabled}>
                   <MessageSquare className="mr-2 h-4 w-4" /> Request Meeting
               </Button>
           )}
         </CardFooter>
       </Card>
-      {user && expert.isAvailableForMeetings && (
+      {user && expert.isAvailableForMeetings && !expert.isExternal && (
         <MeetingRequestDialog 
             isOpen={isDialogOpen}
             onOpenChange={setIsDialogOpen}

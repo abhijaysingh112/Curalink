@@ -10,9 +10,11 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { getExternalExperts } from '@/app/actions';
 
 export default function HealthExpertsPage() {
-    const [researchers, setResearchers] = useState<Researcher[]>([]);
+    const [internalResearchers, setInternalResearchers] = useState<Researcher[]>([]);
+    const [externalResearchers, setExternalResearchers] = useState<Researcher[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const { firestore } = useFirebase();
@@ -23,9 +25,10 @@ export default function HealthExpertsPage() {
         return query(collection(firestore, 'users'), where("userType", "==", "researcher"));
     }, [firestore]);
 
-    // Use a hook to get the researcher user documents
+    // Use a hook to get the researcher user documents from Firestore
     const { data: researcherUsers, isLoading: usersLoading, error: usersError } = useCollection<any>(usersQuery);
 
+    // Effect for fetching internal researchers from Firestore
     useEffect(() => {
         if (usersLoading || !firestore) {
             setIsLoading(true);
@@ -35,20 +38,18 @@ export default function HealthExpertsPage() {
         if (usersError) {
              console.error("Error fetching researchers:", usersError);
              setIsLoading(false);
-             setResearchers([]); // Clear data on error
+             setInternalResearchers([]); // Clear data on error
              return;
         }
 
         if (researcherUsers) {
             const fetchProfiles = async () => {
-                // For each researcher user, fetch their corresponding profile from the subcollection
                 const profilesPromises = researcherUsers.map(async (user) => {
                     const profileCollectionRef = collection(firestore, 'users', user.id, 'researcher_profile');
                     try {
                         const profileSnap = await getDocs(profileCollectionRef);
                         if (!profileSnap.empty) {
                             const profile = profileSnap.docs[0].data();
-                            // Combine user and profile data into the Researcher type
                             return {
                                 id: user.id,
                                 name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
@@ -56,12 +57,12 @@ export default function HealthExpertsPage() {
                                 imageHint: 'researcher portrait',
                                 specialties: profile.specialties || [],
                                 researchInterests: profile.researchInterests || [],
-                                publications: [], // Note: This would require another query to populate fully
+                                publications: [], 
                                 isAvailableForMeetings: profile.availableForMeetings || false,
+                                isExternal: false,
                             } as Researcher;
                         }
                     } catch (e: any) {
-                        // Emit a contextual error if fetching a subcollection fails
                         const contextualError = new FirestorePermissionError({
                             operation: 'list',
                             path: profileCollectionRef.path
@@ -72,22 +73,32 @@ export default function HealthExpertsPage() {
                     return null;
                 });
 
-                // Wait for all profile fetches to complete and filter out any nulls (errors)
                 const resolvedProfiles = (await Promise.all(profilesPromises)).filter(p => p !== null) as Researcher[];
-                setResearchers(resolvedProfiles);
+                setInternalResearchers(resolvedProfiles);
                 setIsLoading(false);
             };
             fetchProfiles();
         } else {
-             // No researcher users found
              setIsLoading(false);
-             setResearchers([]);
+             setInternalResearchers([]);
         }
 
     }, [researcherUsers, usersLoading, usersError, firestore]);
+    
+    // Effect for fetching external experts
+    useEffect(() => {
+        const fetchExternal = async () => {
+            setIsLoading(true);
+            const external = await getExternalExperts();
+            setExternalResearchers(external);
+            setIsLoading(false);
+        }
+        fetchExternal();
+    }, []);
 
-    // Filter researchers based on the search term
-    const filteredResearchers = researchers.filter(r => 
+    // Combine and filter all researchers
+    const allResearchers = [...internalResearchers, ...externalResearchers];
+    const filteredResearchers = allResearchers.filter(r => 
         r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         r.specialties.some(s => s.toLowerCase().includes(searchTerm.toLowerCase())) ||
         r.researchInterests.some(i => i.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -97,7 +108,7 @@ export default function HealthExpertsPage() {
         <div className="space-y-8">
             <PageHeader
                 title="Health Experts"
-                description="Search for specialists and researchers in your field of interest."
+                description="Search for specialists and researchers in your field of interest, including experts from outside the CuraLink platform."
             />
             
             <div className="relative flex-1">
@@ -110,7 +121,7 @@ export default function HealthExpertsPage() {
                 />
             </div>
 
-            {isLoading ? (
+            {isLoading && allResearchers.length === 0 ? (
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
                 </div>

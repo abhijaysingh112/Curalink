@@ -31,6 +31,7 @@ export type Researcher = User & {
     researchInterests: string[];
     publications: string[]; // ids of publications
     isAvailableForMeetings: boolean;
+    isExternal?: boolean;
 };
   
 export type Patient = User & {
